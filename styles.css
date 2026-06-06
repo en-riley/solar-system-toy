@@ -93,3 +93,32 @@ button:hover {
 .delete-btn:hover {
     background: #dc2626;
 }
+
+.space-label {
+    position: absolute;
+    transform: translate(-50%, -100%); /* Center horizontally and sit right above the target */
+    background: rgba(5, 5, 10, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 0.05em;
+    color: #e0e0e0;
+    pointer-events: none; /* Prevents labels from blocking orbit rotation drags */
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.15s ease-in-out;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+/* Specific styling modifier for the central star badge */
+.space-label.star-label {
+    border-color: #ffaa00;
+    color: #ffcc00;
+}
+
+/* Class used by JavaScript to make labels pop into view */
+.space-label.visible {
+    opacity: 1;
+}
