@@ -1,0 +1,95 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #050505;
+    color: white;
+}
+
+#canvas-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1; /* Sits behind the UI */
+}
+
+#ui-container {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 300px;
+    max-height: 90vh;
+    background: rgba(15, 15, 25, 0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 20px;
+    z-index: 10; /* Sits on top of the 3D canvas */
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+button {
+    width: 100%;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+
+button:hover {
+    background: #2563eb;
+}
+
+.planet-control-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    padding: 12px;
+    margin-top: 15px;
+    border-left: 4px solid #3b82f6;
+}
+
+.planet-control-card h4 {
+    margin: 0 0 10px 0;
+    display: flex;
+    justify-content: space-between;
+}
+
+.control-group {
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+}
+
+.control-group input[type="range"] {
+    width: 60%;
+}
+
+.control-group input[type="color"] {
+    border: none;
+    background: none;
+    width: 30px;
+    height: 25px;
+    cursor: pointer;
+}
+
+.delete-btn {
+    background: #ef4444;
+    padding: 4px 8px;
+    font-size: 12px;
+    width: auto;
+    margin: 0;
+}
+.delete-btn:hover {
+    background: #dc2626;
+}
