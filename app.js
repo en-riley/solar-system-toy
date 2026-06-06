@@ -2,7 +2,7 @@
 // 1. STATE MANAGEMENT (The Source of Truth)
 // ==========================================
 let universeState = {
-    star: { name: "Sol", size: 4, color: 0xffaa00 }, 
+    star: { name: "Sol", size: 4, color: 0xffaa00, type: "star" }, 
     planets: []
 };
 
@@ -10,6 +10,7 @@ let universeState = {
 let planetMeshes = [];
 let orbitLines = [];
 let moonMeshes = []; 
+let ringMeshes = [];
 let starMesh = null; 
 
 // Hover, Raycasting & Toggle tracking states
@@ -63,20 +64,60 @@ function initUniverse() {
             sp: 0.01, 
             e: 0.0, 
             tilt: 0.0, 
-            moons: [] 
+            moons: [],
+            hasRings: false
         });
     }
 
     buildVisuals();
     updateUI();
+    createStarfield(); 
+}
+
+function createStarfield() {
+    const starCount = 3000;
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(starCount * 3);
+
+    for (let i = 0; i < starCount * 3; i += 3) {
+        const radius = 200 + Math.random() * 200;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos((Math.random() * 2) - 1);
+
+        positions[i] = radius * Math.sin(phi) * Math.cos(theta);     
+        positions[i + 1] = radius * Math.sin(phi) * Math.sin(theta); 
+        positions[i + 2] = radius * Math.cos(phi);                  
+    }
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+    const material = new THREE.PointsMaterial({
+        color: 0xffffff,
+        size: 0.6,
+        transparent: true,
+        opacity: 0.8,
+        sizeAttenuation: true 
+    });
+
+    const starPoints = new THREE.Points(geometry, material);
+    scene.add(starPoints);
 }
 
 function buildVisuals() {
-    // Clean up older graphic arrays out of hardware memory pools
+    // Cleanup hardware VRAM memory allocations explicitly
     if (planetMeshes) planetMeshes.forEach(p => { scene.remove(p.mesh); p.mesh.geometry.dispose(); p.mesh.material.dispose(); });
     if (orbitLines) orbitLines.forEach(line => { scene.remove(line); line.geometry.dispose(); line.material.dispose(); });
     if (moonMeshes) moonMeshes.forEach(m => { scene.remove(m.mesh); m.mesh.geometry.dispose(); m.mesh.material.dispose(); });
-    if (starMesh) { scene.remove(starMesh); starMesh.geometry.dispose(); starMesh.material.dispose(); }
+    if (ringMeshes) ringMeshes.forEach(r => { scene.remove(r); r.geometry.dispose(); r.material.dispose(); });
+    if (starMesh) { 
+        while(starMesh.children.length > 0){ 
+            let obj = starMesh.children[0];
+            starMesh.remove(obj); 
+            obj.geometry.dispose(); 
+            obj.material.dispose();
+        }
+        scene.remove(starMesh); starMesh.geometry.dispose(); starMesh.material.dispose(); 
+    }
 
     let existingPlanetAngles = planetMeshes ? planetMeshes.map(p => p.angle) : [];
     let existingMoonAngles = {};
@@ -84,29 +125,46 @@ function buildVisuals() {
         moonMeshes.forEach(m => { existingMoonAngles[`${m.parentIdx}-${m.angle}`] = m.angle; });
     }
 
-    // Build Central Star
-    const starGeo = new THREE.SphereGeometry(universeState.star.size, 32, 32);
-    const starMat = new THREE.MeshBasicMaterial({ color: universeState.star.color });
-    starMesh = new THREE.Mesh(starGeo, starMat);
-    starMesh.userData = { type: 'star' }; 
-    scene.add(starMesh);
-
     planetMeshes = [];
     orbitLines = [];
     moonMeshes = [];
+    ringMeshes = [];
 
-    // Clear and build the flat 2D HTML Label text overlay system
+    // Build Central Anchor (Star vs Black Hole)
+    if (universeState.star.type === "blackhole") {
+        const starGeo = new THREE.SphereGeometry(universeState.star.size, 32, 32);
+        const starMat = new THREE.MeshBasicMaterial({ color: 0x000000 }); 
+        starMesh = new THREE.Mesh(starGeo, starMat);
+        
+        const diskGeo = new THREE.RingGeometry(universeState.star.size * 1.4, universeState.star.size * 3, 64);
+        const diskMat = new THREE.MeshBasicMaterial({ 
+            color: 0xff5500, 
+            side: THREE.DoubleSide, 
+            transparent: true, 
+            opacity: 0.8 
+        });
+        const accretionDisk = new THREE.Mesh(diskGeo, diskMat);
+        accretionDisk.rotation.x = Math.PI / 2; 
+        starMesh.add(accretionDisk); 
+    } else {
+        const starGeo = new THREE.SphereGeometry(universeState.star.size, 32, 32);
+        const starMat = new THREE.MeshBasicMaterial({ color: universeState.star.color });
+        starMesh = new THREE.Mesh(starGeo, starMat);
+    }
+    starMesh.userData = { type: 'star' }; 
+    scene.add(starMesh);
+
+    // Build Flat text overlay badge elements container
     const labelsContainer = document.getElementById('labels-container');
     labelsContainer.innerHTML = '';
 
-    // Create label specifically for the central Sun
     const starLabel = document.createElement('div');
     starLabel.className = 'space-label star-label';
     starLabel.id = 'label-star';
     starLabel.innerText = universeState.star.name;
     labelsContainer.appendChild(starLabel);
 
-    // Build Planet structures out of current state values
+    // Build Planets Loop array
     universeState.planets.forEach((pData, pIdx) => {
         const pGeo = new THREE.SphereGeometry(pData.s, 32, 32);
         const pMat = new THREE.MeshStandardMaterial({ color: pData.c, roughness: 0.6 });
@@ -114,7 +172,17 @@ function buildVisuals() {
         pMesh.userData = { type: 'planet', index: pIdx }; 
         scene.add(pMesh);
 
-        // Track structural orbit line loops
+        if (pData.hasRings) {
+            const rGeo = new THREE.RingGeometry(pData.s * 1.4, pData.s * 2.3, 64);
+            const rMat = new THREE.MeshStandardMaterial({ 
+                color: pData.c, side: THREE.DoubleSide, transparent: true, opacity: 0.6, roughness: 0.8
+            });
+            const ringMesh = new THREE.Mesh(rGeo, rMat);
+            ringMesh.rotation.x = Math.PI / 2; 
+            pMesh.add(ringMesh); 
+            ringMeshes.push(ringMesh);
+        }
+
         const lineMaterial = new THREE.LineBasicMaterial({ color: pData.c, transparent: true, opacity: 0.15 });
         const lineGeometry = new THREE.BufferGeometry();
         const points = [];
@@ -133,7 +201,6 @@ function buildVisuals() {
         const pAngle = existingPlanetAngles[pIdx] !== undefined ? existingPlanetAngles[pIdx] : Math.random() * Math.PI * 2;
         planetMeshes.push({ mesh: pMesh, angle: pAngle });
 
-        // Build HTML overlay badge node for this planet
         const pLabel = document.createElement('div');
         pLabel.className = 'space-label';
         pLabel.id = `label-planet-${pIdx}`;
@@ -150,13 +217,7 @@ function buildVisuals() {
             const moonKey = `${pIdx}-${mIdx}`;
             const mAngle = existingMoonAngles[moonKey] !== undefined ? existingMoonAngles[moonKey] : Math.random() * Math.PI * 2;
 
-            moonMeshes.push({
-                mesh: mMesh,
-                parentIdx: pIdx,
-                distance: mData.d,
-                speed: mData.sp,
-                angle: mAngle
-            });
+            moonMeshes.push({ mesh: mMesh, parentIdx: pIdx, distance: mData.d, speed: mData.sp, angle: mAngle });
         });
     });
 }
@@ -185,20 +246,38 @@ function updateUI() {
     const planetList = document.getElementById('planet-list');
     planetList.innerHTML = ''; 
 
-    // Inject dedicated control card for the Central Star at the top of the list
+    // Center Object Card Setup
     const starCard = document.createElement('div');
     starCard.className = 'planet-control-card';
-    starCard.style.borderLeftColor = '#ffaa00'; 
+    starCard.style.borderLeftColor = universeState.star.type === 'blackhole' ? '#ff5500' : '#ffaa00'; 
     starCard.innerHTML = `
-        <h4>
-            <span style="color: #ffcc00;">🌟 Star Name</span>
-        </h4>
-        <input type="text" id="star-name-input" value="${universeState.star.name}" 
-               style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:4px; color:white; font-weight:bold; font-size:15px; padding:4px; width:95%;">
+        <h4><span style="color: #ffcc00;">🌟 Center Object Settings</span></h4>
+        <div class="control-group">
+            <label>Type</label>
+            <select id="star-type-select" style="background:#222; color:white; border:1px solid #444; padding:2px; border-radius:4px; width:60%;">
+                <option value="star" ${universeState.star.type === 'star' ? 'selected' : ''}>Star (Sun)</option>
+                <option value="blackhole" ${universeState.star.type === 'blackhole' ? 'selected' : ''}>Black Hole</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Name</label>
+            <input type="text" id="star-name-input" value="${universeState.star.name}" 
+                   style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:4px; color:white; font-weight:bold; font-size:14px; padding:4px; width:60%;">
+        </div>
+        <div class="control-group">
+            <label>Size</label>
+            <input type="range" id="star-size-slider" min="1" max="10" step="0.5" value="${universeState.star.size}">
+        </div>
+        <div class="control-group" id="star-color-group" style="display: ${universeState.star.type === 'blackhole' ? 'none' : 'flex'};">
+            <label>Color</label>
+            <input type="color" id="star-color-picker" value="${
+                universeState.star.color ? "#" + universeState.star.color.toString(16).padStart(6, '0') : '#ffaa00'
+            }">
+        </div>
     `;
     planetList.appendChild(starCard);
 
-    // Build cards for all existing planets
+    // Dynamic Planet Configuration Cards Loop
     universeState.planets.forEach((pData, pIdx) => {
         const card = document.createElement('div');
         card.className = 'planet-control-card';
@@ -224,6 +303,10 @@ function updateUI() {
             <div class="control-group">
                 <label>Size</label>
                 <input type="range" class="size-slider" data-index="${pIdx}" min="0.2" max="4" step="0.1" value="${pData.s}">
+            </div>
+            <div class="control-group" style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+                <label>Planetary Rings</label>
+                <input type="checkbox" class="rings-checkbox" data-index="${pIdx}" ${pData.hasRings ? 'checked' : ''} style="cursor:pointer; transform:scale(1.2);">
             </div>
             <div class="control-group">
                 <label>Orbit Distance</label>
@@ -256,7 +339,6 @@ function updateUI() {
 }
 
 function attachSliderListeners() {
-    // Size sliders
     document.querySelectorAll('.size-slider').forEach(slider => {
         slider.addEventListener('input', (e) => {
             const idx = e.target.dataset.index;
@@ -268,7 +350,6 @@ function attachSliderListeners() {
         });
     });
 
-    // Distance sliders
     document.querySelectorAll('.dist-slider').forEach(slider => {
         slider.addEventListener('input', (e) => {
             const idx = e.target.dataset.index;
@@ -277,7 +358,6 @@ function attachSliderListeners() {
         });
     });
 
-    // Speed / Timing slider
     document.querySelectorAll('.speed-slider').forEach(slider => {
         slider.addEventListener('input', (e) => {
             const idx = e.target.dataset.index;
@@ -285,7 +365,6 @@ function attachSliderListeners() {
         });
     });
 
-    // Color pickers
     document.querySelectorAll('.color-picker').forEach(picker => {
         picker.addEventListener('input', (e) => {
             const idx = e.target.dataset.index;
@@ -295,7 +374,6 @@ function attachSliderListeners() {
         });
     });
 
-    // Delete planet buttons
     document.querySelectorAll('.delete-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const idx = parseInt(e.target.dataset.index);
@@ -307,7 +385,6 @@ function attachSliderListeners() {
         });
     });
 
-    // Eccentricity shape slider
     document.querySelectorAll('.ecc-slider').forEach(slider => {
         slider.addEventListener('input', (e) => {
             const idx = e.target.dataset.index;
@@ -316,7 +393,6 @@ function attachSliderListeners() {
         });
     });
 
-    // Tilt Angle Offset slider
     document.querySelectorAll('.tilt-slider').forEach(slider => {
         slider.addEventListener('input', (e) => {
             const idx = e.target.dataset.index;
@@ -325,7 +401,6 @@ function attachSliderListeners() {
         });
     });
 
-    // Planet Name Live Input Listener
     document.querySelectorAll('.name-input').forEach(input => {
         input.addEventListener('input', (e) => {
             const idx = e.target.dataset.index;
@@ -335,7 +410,6 @@ function attachSliderListeners() {
         });
     });
 
-    // Moon Name Input Listener
     document.querySelectorAll('.moon-name-input').forEach(input => {
         input.addEventListener('input', (e) => {
             const pIdx = e.target.dataset.planetIndex;
@@ -344,18 +418,16 @@ function attachSliderListeners() {
         });
     });
 
-    // Delete Moon Button Listener
     document.querySelectorAll('.delete-moon-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const pIdx = parseInt(e.target.dataset.planetIndex);
-            const mIdx = parseInt(e.target.dataset.moonIndex);
+            const pIdx = parseInt(btn.dataset.planetIndex);
+            const mIdx = parseInt(btn.dataset.moonIndex);
             universeState.planets[pIdx].moons.splice(mIdx, 1);
             buildVisuals();
             updateUI();
         });
     });
 
-    // Add Moon Button Listener
     document.querySelectorAll('.add-moon-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const pIdx = parseInt(btn.dataset.index);
@@ -372,7 +444,15 @@ function attachSliderListeners() {
         });
     });
 
-    // Central Star Name Input Listener
+    const starTypeSelect = document.getElementById('star-type-select');
+    if (starTypeSelect) {
+        starTypeSelect.addEventListener('change', (e) => {
+            universeState.star.type = e.target.value;
+            buildVisuals();
+            updateUI(); 
+        });
+    }
+
     const starInput = document.getElementById('star-name-input');
     if (starInput) {
         starInput.addEventListener('input', (e) => {
@@ -381,6 +461,35 @@ function attachSliderListeners() {
             if (starLabel) starLabel.innerText = e.target.value;
         });
     }
+
+    const starSizeSlider = document.getElementById('star-size-slider');
+    if (starSizeSlider) {
+        starSizeSlider.addEventListener('input', (e) => {
+            const newSize = parseFloat(e.target.value);
+            universeState.star.size = newSize;
+            if (starMesh) {
+                starMesh.geometry.dispose();
+                starMesh.geometry = new THREE.SphereGeometry(newSize, 32, 32);
+            }
+        });
+    }
+
+    const starColorPicker = document.getElementById('star-color-picker');
+    if (starColorPicker) {
+        starColorPicker.addEventListener('input', (e) => {
+            const newColorNum = parseInt(e.target.value.replace("#", "0x"));
+            universeState.star.color = newColorNum;
+            if (starMesh) starMesh.material.color.set(newColorNum);
+        });
+    }
+
+    document.querySelectorAll('.rings-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', (e) => {
+            const idx = e.target.dataset.index;
+            universeState.planets[idx].hasRings = e.target.checked;
+            buildVisuals(); 
+        });
+    });
 }
 
 // ==========================================
@@ -406,7 +515,7 @@ document.getElementById('add-planet-btn').addEventListener('click', () => {
 
     universeState.planets.push({
         name: randomName, s: Math.random() * 1.5 + 0.5, d: lastDistance + (Math.random() * 5 + 8), 
-        c: randomColor, sp: 0.01, e: 0.0, tilt: 0.0, moons: [] 
+        c: randomColor, sp: 0.01, e: 0.0, tilt: 0.0, moons: [], hasRings: false 
     });
     buildVisuals();
     updateUI(); 
@@ -414,7 +523,6 @@ document.getElementById('add-planet-btn').addEventListener('click', () => {
 
 document.getElementById('share-btn').addEventListener('click', saveToURL);
 
-// Helper function to project standard 3D scene vectors onto a flat 2D viewport sheet
 function projectLabelPosition(meshTarget, domElementId, shouldBeVisible) {
     const element = document.getElementById(domElementId);
     if (!element) return;
@@ -481,7 +589,12 @@ function animate() {
         }
     }
 
-    // Step D: Re-map projected coordinates of flat HTML text overlays
+    // Step D: Spin Black Hole Accretion Disk if active
+    if (universeState.star.type === 'blackhole' && starMesh && starMesh.children.length > 0) {
+        starMesh.children[0].rotation.z += 0.005; 
+    }
+
+    // Step E: Re-map coordinates of HTML overlays
     if (starMesh) {
         projectLabelPosition(starMesh, 'label-star', hoveredObjectId === 'star');
     }
@@ -493,7 +606,6 @@ function animate() {
     renderer.render(scene, camera);
 }
 
-// Window resizing adjustments
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();

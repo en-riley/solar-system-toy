@@ -13,7 +13,7 @@ body, html {
     left: 0;
     width: 100vw;
     height: 100vh;
-    z-index: 1; /* Sits behind the UI */
+    z-index: 1;
 }
 
 #ui-container {
@@ -27,7 +27,7 @@ body, html {
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
     padding: 20px;
-    z-index: 10; /* Sits on top of the 3D canvas */
+    z-index: 10;
     overflow-y: auto;
     box-shadow: 0 4px 20px rgba(0,0,0,0.5);
 }
@@ -61,6 +61,7 @@ button:hover {
     margin: 0 0 10px 0;
     display: flex;
     justify-content: space-between;
+    align-items: center;
 }
 
 .control-group {
@@ -90,13 +91,14 @@ button:hover {
     width: auto;
     margin: 0;
 }
+
 .delete-btn:hover {
     background: #dc2626;
 }
 
 .space-label {
     position: absolute;
-    transform: translate(-50%, -100%); /* Center horizontally and sit right above the target */
+    transform: translate(-50%, -100%);
     background: rgba(5, 5, 10, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.2);
     padding: 4px 8px;
@@ -105,20 +107,18 @@ button:hover {
     font-weight: bold;
     letter-spacing: 0.05em;
     color: #e0e0e0;
-    pointer-events: none; /* Prevents labels from blocking orbit rotation drags */
+    pointer-events: none;
     white-space: nowrap;
     opacity: 0;
     transition: opacity 0.15s ease-in-out;
     box-shadow: 0 2px 8px rgba(0,0,0,0.5);
 }
 
-/* Specific styling modifier for the central star badge */
 .space-label.star-label {
     border-color: #ffaa00;
     color: #ffcc00;
 }
 
-/* Class used by JavaScript to make labels pop into view */
 .space-label.visible {
     opacity: 1;
 }
