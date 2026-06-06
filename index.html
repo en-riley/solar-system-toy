@@ -14,18 +14,22 @@
 
     <div id="labels-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5;"></div>
 
-    <div id="ui-container">
-        <h2>Solar System Creator</h2>
-        <hr>
-        <button id="add-planet-btn">Add Random Planet</button>
-        <button id="share-btn">Copy Share Link</button>
+    <div id="ui-wrapper">
+        <button id="ui-toggle-btn">◀</button>
         
-        <div style="margin: 15px 0; display: flex; align-items: center; gap: 10px; font-size: 14px;">
-            <input type="checkbox" id="toggle-always-show" style="cursor: pointer;">
-            <label for="toggle-always-show" style="cursor: pointer; user-select: none;">Always Show Labels</label>
-        </div>
+        <div id="ui-container">
+            <h2>Solar System Creator</h2>
+            <hr>
+            <button id="add-planet-btn">Add Random Planet</button>
+            <button id="share-btn">Copy Share Link</button>
+            
+            <div style="margin: 15px 0; display: flex; align-items: center; gap: 10px; font-size: 14px;">
+                <input type="checkbox" id="toggle-always-show" style="cursor: pointer;">
+                <label for="toggle-always-show" style="cursor: pointer; user-select: none;">Always Show Labels</label>
+            </div>
 
-        <div id="planet-list"></div>
+            <div id="planet-list"></div>
+        </div>
     </div>
 
     <script src="app.js"></script>

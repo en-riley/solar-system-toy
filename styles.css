@@ -16,20 +16,51 @@ body, html {
     z-index: 1;
 }
 
-#ui-container {
+#ui-wrapper {
     position: absolute;
     top: 20px;
     left: 20px;
+    z-index: 10;
+    display: flex;
+    align-items: flex-start;
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); /* Smooth slide out */
+}
+
+/* This class will be added by JavaScript when collapsed */
+#ui-wrapper.collapsed {
+    transform: translateX(-340px); /* Slides the menu completely off-screen */
+}
+
+#ui-container {
     width: 300px;
     max-height: 90vh;
     background: rgba(15, 15, 25, 0.85);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
+    border-radius: 0 8px 8px 0; /* Rounded edges only on the right side */
     padding: 20px;
-    z-index: 10;
     overflow-y: auto;
     box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+/* The side handle button arrow */
+#ui-toggle-btn {
+    width: 30px;
+    height: 40px;
+    background: rgba(15, 15, 25, 0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: none; /* Blends cleanly into the panel edge */
+    color: white;
+    margin: 0;
+    padding: 0;
+    border-radius: 0 4px 4px 0;
+    order: 2; /* Forces the button to stay on the right side of the menu box */
+    box-shadow: 4px 4px 10px rgba(0,0,0,0.3);
+}
+
+#ui-toggle-btn:hover {
+    background: #3b82f6;
 }
 
 button {

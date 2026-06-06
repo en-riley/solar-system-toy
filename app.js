@@ -132,22 +132,64 @@ function buildVisuals() {
     ringMeshes = [];
 
     // Build Central Anchor (Star vs Black Hole)
+    // 2. BUILD CENTRAL OBJECT (Star vs Upgraded Cinematic Black Hole)
     if (universeState.star.type === "blackhole") {
+        // Core Singularity (Pitch black sphere)
         const starGeo = new THREE.SphereGeometry(universeState.star.size, 32, 32);
         const starMat = new THREE.MeshBasicMaterial({ color: 0x000000 }); 
         starMesh = new THREE.Mesh(starGeo, starMat);
         
-        const diskGeo = new THREE.RingGeometry(universeState.star.size * 1.4, universeState.star.size * 3, 64);
+        // --- VISUAL UPGRADE: DYNAMIC ACCRETION DISK GRADIENT ---
+        // We create an HTML canvas on the fly to generate a smooth, dusty transparency gradient
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 1;
+        const ctx = canvas.getContext('2d');
+        const gradient = ctx.createLinearGradient(0, 0, 256, 0);
+        
+        // Define color bands: Inner white hot glow -> Vibrant Orange -> Fading Deep Red
+        gradient.addColorStop(0.0, 'rgba(255, 255, 255, 1.0)'); // Inner lip edge intense heat
+        gradient.addColorStop(0.1, 'rgba(255, 130, 0, 0.9)');   // Main accretion flow stream
+        gradient.addColorStop(0.5, 'rgba(200, 40, 0, 0.4)');    // Outer swirling dust lanes
+        gradient.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)');       // Complete dissipation into vacuum
+        
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 256, 1);
+        
+        const texture = new THREE.CanvasTexture(canvas);
+
+        // Core Accretion Disk (Uses a flat ring geometry mapped with our custom texture)
+        const diskGeo = new THREE.RingGeometry(universeState.star.size * 1.3, universeState.star.size * 3.5, 64);
         const diskMat = new THREE.MeshBasicMaterial({ 
-            color: 0xff5500, 
+            map: texture,
             side: THREE.DoubleSide, 
-            transparent: true, 
-            opacity: 0.8 
+            transparent: true,
+            blending: THREE.AdditiveBlending, // Forces colors to compound and mathematically "glow"
+            depthWrite: false // Prevents transparency rendering glitches when planets orbit behind it
         });
-        const accretionDisk = new THREE.Mesh(diskGeo, diskMat);
-        accretionDisk.rotation.x = Math.PI / 2; 
-        starMesh.add(accretionDisk); 
+        
+        const mainDisk = new THREE.Mesh(diskGeo, diskMat);
+        mainDisk.rotation.x = Math.PI / 2; 
+        starMesh.add(mainDisk); 
+
+        // SECONDARY LAYER: The Secondary Swirling Dust Lane Ring
+        // Adding an asymmetric, slightly offset layer creates complex spatial depth
+        const detailDiskGeo = new THREE.RingGeometry(universeState.star.size * 1.5, universeState.star.size * 2.8, 64);
+        const detailDiskMat = new THREE.MeshBasicMaterial({
+            map: texture,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.4,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        const detailDisk = new THREE.Mesh(detailDiskGeo, detailDiskMat);
+        detailDisk.rotation.x = Math.PI / 2;
+        detailDisk.rotation.y = 0.08; // Slight structural tilt so it overlaps beautifully
+        starMesh.add(detailDisk);
+
     } else {
+        // Standard Star (Your existing code stays exactly the same here)
         const starGeo = new THREE.SphereGeometry(universeState.star.size, 32, 32);
         const starMat = new THREE.MeshBasicMaterial({ color: universeState.star.color });
         starMesh = new THREE.Mesh(starGeo, starMat);
@@ -496,6 +538,21 @@ function attachSliderListeners() {
 // ==========================================
 // 6. MOUSE TRACKING & INTERACTIVE UI BUTTONS
 // ==========================================
+// UI Collapse / Expand Toggle Listener
+document.getElementById('ui-toggle-btn').addEventListener('click', () => {
+    const wrapper = document.getElementById('ui-wrapper');
+    const btn = document.getElementById('ui-toggle-btn');
+    
+    // Toggle the collapsed class on our parent container
+    wrapper.classList.toggle('collapsed');
+    
+    // Change the arrow icon depending on state
+    if (wrapper.classList.contains('collapsed')) {
+        btn.innerText = '▶'; // Point out to expand
+    } else {
+        btn.innerText = '◀'; // Point back to hide
+    }
+});
 
 window.addEventListener('mousemove', (e) => {
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
