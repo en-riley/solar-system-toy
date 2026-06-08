@@ -3,7 +3,7 @@ body, html {
     padding: 0;
     overflow: hidden;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #050505;
+    background-color: #020204;
     color: white;
 }
 
@@ -23,49 +23,28 @@ body, html {
     z-index: 10;
     display: flex;
     align-items: flex-start;
-    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); /* Smooth slide out */
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-/* This class will be added by JavaScript when collapsed */
 #ui-wrapper.collapsed {
-    transform: translateX(-340px); /* Slides the menu completely off-screen */
+    transform: translateX(-340px);
 }
 
 #ui-container {
     width: 300px;
     max-height: 90vh;
-    background: rgba(15, 15, 25, 0.85);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 0 8px 8px 0; /* Rounded edges only on the right side */
+    background: rgba(10, 10, 18, 0.75);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0 8px 8px 0;
     padding: 20px;
     overflow-y: auto;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-}
-
-/* The side handle button arrow */
-#ui-toggle-btn {
-    width: 30px;
-    height: 40px;
-    background: rgba(15, 15, 25, 0.85);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-left: none; /* Blends cleanly into the panel edge */
-    color: white;
-    margin: 0;
-    padding: 0;
-    border-radius: 0 4px 4px 0;
-    order: 2; /* Forces the button to stay on the right side of the menu box */
-    box-shadow: 4px 4px 10px rgba(0,0,0,0.3);
-}
-
-#ui-toggle-btn:hover {
-    background: #3b82f6;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.7);
 }
 
 button {
     width: 100%;
-    background: #3b82f6;
+    background: #2563eb;
     color: white;
     border: none;
     padding: 10px;
@@ -73,19 +52,40 @@ button {
     border-radius: 4px;
     cursor: pointer;
     font-weight: bold;
-    transition: background 0.2s;
+    transition: background 0.2s, transform 0.1s;
 }
 
 button:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+}
+
+#ui-toggle-btn {
+    width: 30px;
+    height: 40px;
+    background: rgba(10, 10, 18, 0.75);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-left: none;
+    color: white;
+    margin: 0;
+    padding: 0;
+    border-radius: 0 4px 4px 0;
+    order: 2;
+    box-shadow: 4px 4px 15px rgba(0,0,0,0.4);
+}
+
+#ui-toggle-btn:hover {
     background: #2563eb;
 }
 
 .planet-control-card {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 6px;
     padding: 12px;
     margin-top: 15px;
-    border-left: 4px solid #3b82f6;
+    border-left: 4px solid #2563eb;
 }
 
 .planet-control-card h4 {
@@ -104,7 +104,16 @@ button:hover {
 }
 
 .control-group input[type="range"] {
-    width: 60%;
+    width: 55%;
+    accent-color: #2563eb;
+}
+
+.control-group select {
+    background: #111;
+    color: white;
+    border: 1px solid #333;
+    padding: 3px;
+    border-radius: 4px;
 }
 
 .control-group input[type="color"] {
@@ -116,7 +125,7 @@ button:hover {
 }
 
 .delete-btn {
-    background: #ef4444;
+    background: #dc2626;
     padding: 4px 8px;
     font-size: 12px;
     width: auto;
@@ -124,30 +133,30 @@ button:hover {
 }
 
 .delete-btn:hover {
-    background: #dc2626;
+    background: #b91c1c;
 }
 
 .space-label {
     position: absolute;
     transform: translate(-50%, -100%);
-    background: rgba(5, 5, 10, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 4px 8px;
+    background: rgba(4, 4, 8, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 4px 10px;
     border-radius: 4px;
     font-size: 11px;
-    font-weight: bold;
+    font-weight: 600;
     letter-spacing: 0.05em;
-    color: #e0e0e0;
+    color: #d1d5db;
     pointer-events: none;
     white-space: nowrap;
     opacity: 0;
-    transition: opacity 0.15s ease-in-out;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    transition: opacity 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.6);
 }
 
 .space-label.star-label {
-    border-color: #ffaa00;
-    color: #ffcc00;
+    border-color: #eab308;
+    color: #facc15;
 }
 
 .space-label.visible {
