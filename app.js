@@ -90,6 +90,7 @@ composer.addPass(bloomPass);
 // ==========================================
 const AtmosphereShader = {
     vertexShader: `
+        precision mediump float;
         varying vec3 vNormal;
         varying vec3 vViewPosition;
         void main() {
@@ -100,6 +101,7 @@ const AtmosphereShader = {
         }
     `,
     fragmentShader: `
+        precision mediump float;
         varying vec3 vNormal;
         varying vec3 vViewPosition;
         uniform vec3 glowColor;
@@ -372,9 +374,15 @@ function loadFromURL() {
 // 7. DYNAMIC DASHBOARD PANEL BUILDER
 // ==========================================
 function updateUI() {
-    const list = document.getElementById('planet-list'); list.innerHTML = ''; 
+    const list = document.getElementById('planet-list'); 
+    list.innerHTML = ''; 
 
-    const starCard = document.createElement('div'); starCard.className = 'planet-control-card'; starCard.style.borderLeftColor = '#ffaa00'; 
+    // --- 1. STAR CARD (Keep your existing starCard logic here) ---
+    const starCard = document.createElement('div'); 
+    starCard.className = 'planet-control-card'; 
+    starCard.style.borderLeftColor = '#ffaa00'; 
+    const showCustom = universeState.star.class === 'custom' && universeState.star.type !== 'blackhole';
+    
     starCard.innerHTML = `
         <h4><span style="color: #ffcc00;">🌟 Center Object Settings</span></h4>
         <div class="control-group"><label>Core Type</label>
@@ -391,7 +399,6 @@ function updateUI() {
                 <option value="M" ${universeState.star.class === 'M' ? 'selected' : ''}>Class M (Red Dwarf)</option>
                 <option value="WD" ${universeState.star.class === 'WD' ? 'selected' : ''}>White Dwarf</option>
                 <option value="NS" ${universeState.star.class === 'NS' ? 'selected' : ''}>Neutron Star (Pulsar)</option>
-                <option value="PROTO" ${universeState.star.class === 'PROTO' ? 'selected' : ''}>Proto-Star (Infant)</option>
                 <option value="custom" ${universeState.star.class === 'custom' ? 'selected' : ''}>[ Custom Sandbox Star ]</option>
             </select>
         </div>
@@ -400,68 +407,97 @@ function updateUI() {
     `;
     list.appendChild(starCard);
 
-    universeState.planets.forEach((pData, pIdx) => {
-        const card = document.createElement('div'); card.className = 'planet-control-card';
-        card.innerHTML = `
-            <h4>
-                <input type="text" class="name-input" data-index="${pIdx}" value="${pData.name}" style="width:70%; background:none; border:1px solid #444; color:white;">
-                <button class="delete-btn" data-type="planet" data-index="${pIdx}">X</button>
-            </h4>
-            <div class="control-group"><label>Planet Class</label>
-                <select class="planet-class-select" data-index="${pIdx}" style="background:#222; color:white; border:1px solid #444; width:60%;">
-                    <option value="rocky" ${pData.class === 'rocky' ? 'selected' : ''}>Terrestrial (Rocky)</option>
-                    <option value="gas" ${pData.class === 'gas' ? 'selected' : ''}>Gas Giant</option>
-                    <option value="lava" ${pData.class === 'lava' ? 'selected' : ''}>Lava World</option>
-                    <option value="ocean" ${pData.class === 'ocean' ? 'selected' : ''}>Ocean Planet</option>
-                    <option value="desert" ${pData.class === 'desert' ? 'selected' : ''}>Desert/Dune World</option>
-                    <option value="toxic" ${pData.class === 'toxic' ? 'selected' : ''}>Toxic/Sulfur Planet</option>
-                    <option value="cyberpunk" ${pData.class === 'cyberpunk' ? 'selected' : ''}>Cyberpunk Megacity</option>
-                    <option value="ringworld" ${pData.class === 'ringworld' ? 'selected' : ''}>Forerunner Ringworld</option>
-                    <option value="fractured" ${pData.class === 'fractured' ? 'selected' : ''}>Fractured Shattered Core</option>
-                </select>
-            </div>
-            <div class="control-group"><label>Scale Factor</label><input type="range" class="size-slider" data-index="${pIdx}" min="0.2" max="4" step="0.1" value="${pData.s}"></div>
-            <div class="control-group"><label>Distance</label><input type="range" class="dist-slider" data-index="${pIdx}" min="8" max="100" step="1" value="${pData.d}"></div>
-            
-            <div class="control-group"><label>Orbit Speed</label><input type="range" class="speed-slider" data-index="${pIdx}" min="0.0" max="0.03" step="0.001" value="${pData.sp}"></div>
-            
-            <div class="control-group"><label>Orbit Shape</label><input type="range" class="ecc-slider" data-index="${pIdx}" min="0.0" max="0.9" step="0.05" value="${pData.e}"></div>
-            <div class="control-group"><label>Orbit Tilt</label><input type="range" class="tilt-slider" data-index="${pIdx}" min="0" max="6.28" step="0.05" value="${pData.tilt}"></div>
-            <div class="control-group"><label>Base Color</label><input type="color" class="color-picker" data-index="${pIdx}" value="${pData.c}"></div>
+    // --- 2. PLANET CARDS ---
+    universeState.planets.forEach((p, idx) => {
+        const pCard = document.createElement('div');
+        pCard.className = 'planet-control-card';
+        pCard.style.borderLeftColor = p.c;
+
+        pCard.innerHTML = `
+            <h4>🪐 Planet <button class="delete-btn" data-type="planet" data-index="${idx}" style="float:right; background:#d32f2f; color:white; border:none; border-radius:3px; cursor:pointer;">X</button></h4>
+            <div class="control-group"><label>Name</label><input type="text" class="planet-name-input" data-index="${idx}" value="${p.name}" style="width:60%;"></div>
+            <div class="control-group"><label>Size</label><input type="range" class="size-slider" data-index="${idx}" min="0.2" max="6.0" step="0.1" value="${p.s}"></div>
+            <div class="control-group"><label>Distance</label><input type="range" class="dist-slider" data-index="${idx}" min="5" max="300" step="1" value="${p.d}"></div>
+            <div class="control-group"><label style="margin-left:10px;"><input type="checkbox" class="rings-checkbox" data-index="${idx}" ${p.hasRings ? 'checked' : ''}> Rings</label></div>
         `;
-        list.appendChild(card);
+        list.appendChild(pCard);
     });
 
-    attachSliderListeners();
+    // --- 3. COMET CARDS ---
+    universeState.comets.forEach((c, idx) => {
+        const cCard = document.createElement('div');
+        cCard.className = 'planet-control-card';
+        cCard.style.borderLeftColor = '#88ccff';
+
+        cCard.innerHTML = `
+            <h4>☄️ Comet <button class="delete-btn" data-type="comet" data-index="${idx}" style="float:right; background:#d32f2f; color:white; border:none; border-radius:3px; cursor:pointer;">X</button></h4>
+            <div class="control-group"><label>Name</label><input type="text" class="comet-name-input" data-index="${idx}" value="${c.name}" style="width:60%;"></div>
+            <div class="control-group"><label>Distance</label><input type="range" class="comet-dist-slider" data-index="${idx}" min="10" max="400" step="5" value="${c.d}"></div>
+        `;
+        list.appendChild(cCard);
+    });
+
+    // --- 4. BELT CARDS ---
+    universeState.belts.forEach((b, idx) => {
+        const bCard = document.createElement('div');
+        bCard.className = 'planet-control-card';
+        bCard.style.borderLeftColor = '#aaaaaa';
+
+        bCard.innerHTML = `
+            <h4>🌑 Asteroid Belt <button class="delete-btn" data-type="belt" data-index="${idx}" style="float:right; background:#d32f2f; color:white; border:none; border-radius:3px; cursor:pointer;">X</button></h4>
+            <div class="control-group"><label>Name</label><input type="text" class="belt-name-input" data-index="${idx}" value="${b.name || "Asteroid Belt " + (idx+1)}" style="width:60%;"></div>
+            <div class="control-group"><label>Inner Radius</label><input type="range" class="belt-inner-slider" data-index="${idx}" min="10" max="300" step="2" value="${b.innerR}"></div>
+        `;
+        list.appendChild(bCard);
+    });
 }
 
 function attachSliderListeners() {
-    document.querySelectorAll('.size-slider').forEach(s => s.addEventListener('input', (e) => { const idx = e.target.dataset.index; universeState.planets[idx].s = parseFloat(e.target.value); buildVisuals(); }));
-    document.querySelectorAll('.dist-slider').forEach(s => s.addEventListener('input', (e) => { const idx = e.target.dataset.index; universeState.planets[idx].d = parseFloat(e.target.value); buildVisuals(); }));
+    const uiContainer = document.getElementById('ui-container');
+    if (!uiContainer) return;
     
-    // SPEED BINDING RESTORATION PASS: Connects user inputs directly to physics increment loops
-    document.querySelectorAll('.speed-slider').forEach(s => s.addEventListener('input', (e) => { 
-        const idx = e.target.dataset.index; 
-        universeState.planets[idx].sp = parseFloat(e.target.value); 
-    }));
-    
-    document.querySelectorAll('.ecc-slider').forEach(s => s.addEventListener('input', (e) => { const idx = e.target.dataset.index; universeState.planets[idx].e = parseFloat(e.target.value); buildVisuals(); }));
-    document.querySelectorAll('.tilt-slider').forEach(s => s.addEventListener('input', (e) => { const idx = e.target.dataset.index; universeState.planets[idx].tilt = parseFloat(e.target.value); buildVisuals(); }));
-    document.querySelectorAll('.color-picker').forEach(p => p.addEventListener('input', (e) => { const idx = e.target.dataset.index; universeState.planets[idx].c = e.target.value; buildVisuals(); }));
-    
-    document.querySelectorAll('.planet-class-select').forEach(sel => sel.addEventListener('change', (e) => {
-        const idx = e.target.dataset.index; universeState.planets[idx].class = e.target.value; buildVisuals();
-    }));
-    document.querySelectorAll('.name-input').forEach(i => i.addEventListener('input', (e) => {
-        const idx = e.target.dataset.index; universeState.planets[idx].name = e.target.value;
-        const el = document.getElementById(`label-planet-${idx}`); if (el) el.innerText = e.target.value;
-    }));
-    document.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', (e) => {
-        const idx = parseInt(e.target.dataset.index); universeState.planets.splice(idx, 1); buildVisuals(); updateUI();
-    }));
+    // Attaching ONCE to the stable parent element instead of removing/re-adding
+    uiContainer.addEventListener('input', handleDelegatedInput);
+    uiContainer.addEventListener('change', handleDelegatedChange);
+    uiContainer.addEventListener('click', handleDelegatedClick);
+}
 
-    document.getElementById('star-type-select').addEventListener('change', (e) => { universeState.star.type = e.target.value; buildVisuals(); updateUI(); });
-    document.getElementById('star-name-input').addEventListener('input', (e) => { universeState.star.name = e.target.value; const l = document.getElementById('label-star'); if (l) l.innerText = e.target.value; });
+function handleDelegatedInput(e) {
+    const idx = e.target.dataset.index;
+    if (e.target.classList.contains('size-slider')) { universeState.planets[idx].s = parseFloat(e.target.value); buildVisuals(); }
+    if (e.target.classList.contains('dist-slider')) { universeState.planets[idx].d = parseFloat(e.target.value); buildVisuals(); }
+    if (e.target.classList.contains('speed-slider')) { universeState.planets[idx].sp = parseFloat(e.target.value); }
+    if (e.target.classList.contains('ecc-slider')) { universeState.planets[idx].e = parseFloat(e.target.value); buildVisuals(); }
+    if (e.target.classList.contains('tilt-slider')) { universeState.planets[idx].tilt = parseFloat(e.target.value); buildVisuals(); }
+    if (e.target.classList.contains('color-picker')) { universeState.planets[idx].c = e.target.value; buildVisuals(); }
+        if (e.target.id === 'star-size-slider') { 
+        universeState.star.size = parseFloat(e.target.value); buildVisuals(); 
+    }
+    if (e.target.id === 'star-color-picker') { 
+        universeState.star.color = parseInt(e.target.value.replace("#", "0x")); buildVisuals(); 
+    }
+    if (e.target.id === 'star-intensity-slider') { sunLight.intensity = parseFloat(e.target.value); universeState.star.intensity = parseFloat(e.target.value); }
+}
+
+function handleDelegatedChange(e) {
+    const idx = e.target.dataset.index;
+    if (e.target.classList.contains('planet-class-select')) { universeState.planets[idx].class = e.target.value; buildVisuals(); updateUI(); }
+    if (e.target.id === 'star-type-select') { universeState.star.type = e.target.value; buildVisuals(); updateUI(); }
+    if (e.target.id === 'star-class-select') { universeState.star.class = e.target.value; buildVisuals(); updateUI(); }
+    if (e.target.classList.contains('rings-checkbox')) { universeState.planets[idx].hasRings = e.target.checked; buildVisuals(); }
+}
+
+function handleDelegatedClick(e) {
+    if (e.target.classList.contains('delete-btn')) {
+        const idx = parseInt(e.target.dataset.index);
+        universeState.planets.splice(idx, 1);
+        buildVisuals(); updateUI();
+    }
+    if (e.target.classList.contains('add-moon-btn')) {
+        const idx = parseInt(e.target.dataset.index);
+        universeState.planets[idx].moons.push({ s: 0.2, d: 2, c: '#ffffff', sp: 0.02 });
+        buildVisuals();
+    }
 }
 
 // ==========================================
@@ -568,6 +604,7 @@ window.addEventListener('resize', () => {
 });
 
 function initUniverse() { 
+    attachSliderListeners(); // <-- ADDED: Actually initialize your UI events
     const sharedData = loadFromURL(); if (sharedData) { universeState = sharedData; } 
     const starCount = 3000; const starfieldGeo = new THREE.BufferGeometry(); const starfieldPositions = new Float32Array(starCount * 3);
     for (let i = 0; i < starCount * 3; i += 3) {
